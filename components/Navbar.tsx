@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCart } from "@/context/CartContext";
 
 const navLinks = [
   { href: "/",       label: "Home"    },
@@ -12,10 +13,10 @@ const navLinks = [
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [mode, setMode]           = useState<"delivery" | "dine-in">("delivery");
-  const [cartCount, setCartCount] = useState(0);
-  const [scrolled, setScrolled]   = useState(false);
-  const [menuOpen, setMenuOpen]   = useState(false);
+  const [mode, setMode]         = useState<"delivery" | "dine-in">("delivery");
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { totalItems: cartCount } = useCart();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
