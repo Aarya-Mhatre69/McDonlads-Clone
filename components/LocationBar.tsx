@@ -75,9 +75,10 @@ export default function LocationBar() {
     <div
       id="location-bar"
       style={{
-        background: "#ffffff",
-        borderBottom: "1px solid #e4e4e7",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
+        background: "rgba(26, 26, 26, 0.95)",
+        backdropFilter: "blur(12px)",
+        borderBottom: "1px solid rgba(255, 199, 44, 0.1)",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
         position: "sticky",
         top: "80px",
         zIndex: 40,

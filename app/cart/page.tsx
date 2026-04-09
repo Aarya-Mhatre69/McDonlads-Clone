@@ -9,7 +9,7 @@ export default function CartPage() {
   return (
     <div
       className="min-h-screen page-enter"
-      style={{ background: "#f8f8f8" }}
+      style={{ background: "#1A1A1A" }}
     >
       {/* ── Header ── */}
       <div
