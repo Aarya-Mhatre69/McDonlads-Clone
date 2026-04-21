@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { CartProvider } from "@/context/CartContext";
+import { AuthProvider } from "@/context/AuthProvider";
 
 export const metadata: Metadata = {
   title: "McDonald's India — Taste the Fusion",
@@ -24,10 +25,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head />
       <body>
-        <CartProvider>
-          <Navbar />
-          <main className="pt-[68px]">{children}</main>
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <Navbar />
+            <main className="pt-[68px]">{children}</main>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

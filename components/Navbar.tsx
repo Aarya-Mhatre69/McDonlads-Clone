@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { useSession, signOut } from "next-auth/react";
 
 const navLinks = [
   { href: "/",        label: "Home",    icon: "🏠" },
@@ -17,6 +18,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { totalItems: cartCount } = useCart();
+  const { data: session } = useSession();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -133,6 +135,20 @@ export default function Navbar() {
                 ))}
               </div>
 
+              {/* Auth Button */}
+              {session ? (
+                <div className="hidden lg:flex items-center gap-3 bg-[#1E1E1E] rounded-xl px-4 py-2 border border-white/8">
+                  <span className="text-white text-xs font-bold truncate max-w-[100px]">Hi, {session.user?.name?.split(' ')[0] || 'User'}</span>
+                  <button onClick={() => signOut()} className="text-[#DA291C] text-xs font-black tracking-wider hover:text-white transition-colors">
+                    LOGOUT
+                  </button>
+                </div>
+              ) : (
+                <Link href="/login" className="hidden lg:flex items-center gap-2 bg-[#DA291C] hover:bg-[#b52018] rounded-xl px-4 py-2.5 transition-colors">
+                  <span className="text-white text-[11px] font-black tracking-widest leading-none">LOGIN</span>
+                </Link>
+              )}
+
               {/* Cart */}
               <Link
                 href="/cart"
@@ -241,8 +257,22 @@ export default function Navbar() {
             );
           })}
 
+          {/* Auth Button in Drawer */}
+          {session ? (
+            <div className="mt-4 p-4 rounded-2xl flex justify-between items-center" style={{ background: "#1E1E1E" }}>
+              <span className="text-white text-sm font-bold truncate">Hi, {session.user?.name}</span>
+              <button onClick={() => signOut({ callbackUrl: '/' })} className="text-[#DA291C] text-sm font-black tracking-wider hover:text-white transition-colors">
+                LOGOUT
+              </button>
+            </div>
+          ) : (
+            <Link href="/login" onClick={() => setMenuOpen(false)} className="mt-4 flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-bold text-white bg-[#DA291C] transition-all duration-200 shadow-lg">
+              👤 LOGIN / SIGN UP
+            </Link>
+          )}
+
           {/* Mode toggle in drawer */}
-          <div className="mt-4 p-1 rounded-2xl flex gap-1" style={{ background: "#1E1E1E" }}>
+          <div className="mt-3 p-1 rounded-2xl flex gap-1" style={{ background: "#1E1E1E" }}>
             {(["delivery", "dine-in"] as const).map((m) => (
               <button
                 key={m}
