@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import CursorFX from "@/components/CursorFX";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthProvider";
 
@@ -23,10 +24,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
       <body>
         <AuthProvider>
           <CartProvider>
+            <CursorFX />
             <Navbar />
             <main className="pt-[68px]">{children}</main>
           </CartProvider>
@@ -35,4 +40,3 @@ export default function RootLayout({
     </html>
   );
 }
-

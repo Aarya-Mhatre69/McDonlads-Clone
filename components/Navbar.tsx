@@ -6,298 +6,232 @@ import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { useSession, signOut } from "next-auth/react";
 
-const navLinks = [
-  { href: "/",        label: "Home",    icon: "🏠" },
-  { href: "/menu",    label: "Menu",    icon: "🍔" },
-  { href: "/outlets", label: "Outlets", icon: "📍" },
+const NAV_LINKS = [
+  { href:"/#menu",       label:"Menu",           isHash:true,  sectionId:"menu",        hasDropdown:true },
+  { href:"/outlets",     label:"Restaurants",    isHash:false, sectionId:null,          hasDropdown:false },
+  { href:"/#mcdelivery", label:"McDelivery",     isHash:true,  sectionId:"mcdelivery",  hasDropdown:false },
+  { href:"/#news",       label:"News",           isHash:true,  sectionId:"news",        hasDropdown:false },
+  { href:"/birthday",    label:"Birthday Party", isHash:false, sectionId:null,          hasDropdown:false },
+  { href:"/careers",     label:"Careers",        isHash:false, sectionId:null,          hasDropdown:false },
+];
+
+const MENU_DROPDOWN = [
+  { href:"/menu#burgers",    label:"Burgers & Wraps" },
+  { href:"/menu#chicken",    label:"Chicken & Fish" },
+  { href:"/menu#snacks",     label:"Snacks & Sides" },
+  { href:"/menu#beverages",  label:"Beverages" },
+  { href:"/menu#desserts",   label:"Desserts" },
+  { href:"/menu#happy-meal", label:"Happy Meal" },
 ];
 
 export default function Navbar() {
-  const pathname  = usePathname();
-  const [mode, setMode]         = useState<"delivery" | "dine-in">("delivery");
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const [scrolled,      setScrolled]      = useState(false);
+  const [menuOpen,      setMenuOpen]      = useState(false);
+  const [activeSection, setActiveSection] = useState("");
+  const [ddOpen,        setDdOpen]        = useState(false);
   const { totalItems: cartCount } = useCart();
   const { data: session } = useSession();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    window.addEventListener("scroll", onScroll);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 8);
+      const ids = ["menu","mcdelivery","news","restaurants","offers"];
+      let found = "";
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && window.scrollY >= el.offsetTop - 110) found = id;
+      });
+      setActiveSection(found);
+    };
+    window.addEventListener("scroll", onScroll, { passive:true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  /* lock body scroll when mobile menu is open */
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
+  const smoothScroll = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior:"smooth" });
+
+  const isActive = (link: typeof NAV_LINKS[0]) => {
+    if (!link.isHash) return pathname === link.href || pathname.startsWith(link.href + "/");
+    return activeSection === link.sectionId;
+  };
+
+  const handleNavClick = (link: typeof NAV_LINKS[0], e: React.MouseEvent) => {
+    if (link.isHash && pathname === "/") {
+      e.preventDefault();
+      smoothScroll(link.sectionId!);
+    }
+  };
+
   return (
     <>
-      {/* ─────────── MAIN NAVBAR ─────────── */}
-      <header
-        id="main-navbar"
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled
-            ? "bg-[#111111]/96 backdrop-blur-xl shadow-2xl shadow-black/40 border-b border-white/5"
-            : "bg-[#141414] border-b border-white/6"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-5 sm:px-8">
-          <div className="flex items-center justify-between h-[68px]">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+        #mcdnav * { font-family:'Outfit',sans-serif; box-sizing:border-box; }
+        @media (hover: hover) and (pointer: fine) {
+          #mcdnav, #mcdnav *, .mob-ov, .mob-drw, .mob-drw * { cursor: none !important; }
+        }
 
-            {/* ── Logo ── */}
-            <Link href="/" id="navbar-logo" className="flex items-center gap-3 group flex-shrink-0">
-              {/* Golden arch emblem */}
-              <div className="relative w-11 h-11 flex items-center justify-center rounded-2xl overflow-hidden shadow-lg group-hover:scale-105 transition-transform duration-300"
-                style={{ background: "linear-gradient(135deg, #FFC72C 0%, #FFB800 100%)" }}>
-                <span
-                  className="font-black text-[#DA291C] text-3xl leading-none select-none"
-                  style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "-1px" }}
-                >
-                  M
-                </span>
-                {/* shine overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/25 to-transparent pointer-events-none" />
-              </div>
+        .mnl { display:inline-flex; align-items:center; gap:4px; padding:8px 12px; border-radius:8px; font-size:13px; font-weight:600; color:#666; text-decoration:none; transition:color 0.15s,background 0.15s; white-space:nowrap; border:none; background:transparent; cursor:pointer; position:relative; }
+        .mnl:hover { color:#1A1A1A; background:rgba(0,0,0,0.04); }
+        .mnl.act { color:#DA291C; font-weight:700; }
+        .mnl.act::after { content:''; position:absolute; bottom:-3px; left:12px; right:12px; height:2.5px; background:#DA291C; border-radius:2px; }
 
-              {/* Brand text */}
-              <div className="flex flex-col leading-none gap-[2px]">
-                <span className="text-white font-bold text-[15px] tracking-tight">
-                  McDonald&apos;s
-                </span>
-                <span
-                  className="text-[11px] font-bold tracking-[0.22em] uppercase"
-                  style={{ color: "#FFC72C" }}
-                >
-                  India
-                </span>
-              </div>
-            </Link>
+        .mdd { position:absolute; top:calc(100% + 8px); left:50%; transform:translateX(-50%) translateY(-4px); width:196px; background:#fff; border:1px solid #EBEBEB; border-radius:14px; box-shadow:0 10px 36px rgba(0,0,0,0.1); padding:7px; opacity:0; pointer-events:none; transition:opacity .17s,transform .17s; z-index:200; }
+        .mdd::before { content:''; position:absolute; top:-5px; left:50%; transform:translateX(-50%) rotate(45deg); width:9px; height:9px; background:#fff; border-left:1px solid #EBEBEB; border-top:1px solid #EBEBEB; }
+        .mdd.open { opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0); }
+        .mdi { display:flex; align-items:center; gap:9px; padding:9px 12px; border-radius:8px; font-size:13px; font-weight:500; color:#555; text-decoration:none; transition:background .12s,color .12s; }
+        .mdi:hover { background:#FFF8E1; color:#DA291C; }
+        .mdi-dot { width:6px; height:6px; border-radius:50%; background:#FFC72C; flex-shrink:0; }
 
-            {/* ── Desktop Nav Links ── */}
-            <nav className="hidden md:flex items-center gap-1" aria-label="Primary navigation">
-              {navLinks.map((link) => {
-                const active = pathname === link.href;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    id={`nav-link-${link.label.toLowerCase()}`}
-                    className={`relative px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 group ${
-                      active
-                        ? "text-[#1A1A1A]"
-                        : "text-[#9A9AA8] hover:text-white"
-                    }`}
-                  >
-                    {/* active background pill */}
-                    {active && (
-                      <span
-                        className="absolute inset-0 rounded-xl -z-0"
-                        style={{ background: "linear-gradient(135deg, #FFC72C, #FFB800)" }}
-                      />
-                    )}
-                    {/* hover ghost */}
-                    {!active && (
-                      <span className="absolute inset-0 rounded-xl bg-white/0 group-hover:bg-white/6 transition-colors duration-200 -z-0" />
-                    )}
-                    <span className="relative z-10">{link.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
+        .n-cart { position:relative; display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; border:1.5px solid #E8E8E8; background:#fff; text-decoration:none; transition:all 0.2s; }
+        .n-cart:hover { border-color:#FFC72C; background:#FFF8E1; }
+        .n-cart:hover .n-ci { color:#DA291C !important; }
+        .n-cbadge { position:absolute; top:-7px; right:-7px; min-width:19px; height:19px; padding:0 4px; background:#DA291C; color:#fff; font-size:10px; font-weight:900; border-radius:99px; display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
 
-            {/* ── Right Controls ── */}
-            <div className="flex items-center gap-2.5">
+        .n-signin { display:flex; align-items:center; gap:6px; padding:8px 18px; border-radius:22px; background:#DA291C; color:#fff !important; font-size:12px; font-weight:800; letter-spacing:0.04em; text-decoration:none; transition:background 0.2s; border:none; cursor:pointer; }
+        .n-signin:hover { background:#b52018; }
 
-              {/* Delivery / Dine-In Toggle — desktop only */}
-              <div
-                id="mode-toggle"
-                className="hidden lg:flex items-center bg-[#1E1E1E] rounded-full p-1 border border-white/8 gap-0.5"
-                role="group"
-                aria-label="Order mode"
-              >
-                {(["delivery", "dine-in"] as const).map((m) => (
-                  <button
-                    key={m}
-                    id={`toggle-${m}`}
-                    onClick={() => setMode(m)}
-                    aria-pressed={mode === m}
-                    className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold tracking-wide transition-all duration-250 whitespace-nowrap ${
-                      mode === m
-                        ? "text-[#1A1A1A] shadow-sm"
-                        : "text-[#6B6B78] hover:text-[#A1A1AA]"
-                    }`}
-                    style={mode === m ? { background: "linear-gradient(135deg,#FFC72C,#FFB800)" } : {}}
-                  >
-                    {m === "delivery" ? "🛵  Delivery" : "🍽  Dine-In"}
-                  </button>
-                ))}
-              </div>
+        .n-ham { display:none; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; border:1.5px solid #E8E8E8; background:#fff; cursor:pointer; transition:all .2s; }
 
-              {/* Auth Button */}
-              {session ? (
-                <div className="hidden lg:flex items-center gap-3 bg-[#1E1E1E] rounded-xl px-4 py-2 border border-white/8">
-                  <span className="text-white text-xs font-bold truncate max-w-[100px]">Hi, {session.user?.name?.split(' ')[0] || 'User'}</span>
-                  <button onClick={() => signOut()} className="text-[#DA291C] text-xs font-black tracking-wider hover:text-white transition-colors">
-                    LOGOUT
-                  </button>
-                </div>
-              ) : (
-                <Link href="/login" className="hidden lg:flex items-center gap-2 bg-[#DA291C] hover:bg-[#b52018] rounded-xl px-4 py-2.5 transition-colors">
-                  <span className="text-white text-[11px] font-black tracking-widest leading-none">LOGIN</span>
-                </Link>
-              )}
+        .mob-ov { position:fixed; inset:0; z-index:40; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); transition:opacity .25s; }
+        .mob-ov.off { opacity:0; pointer-events:none; }
+        .mob-drw { position:fixed; top:0; right:0; height:100%; width:284px; z-index:50; background:#fff; border-left:1px solid #EBEBEB; display:flex; flex-direction:column; transition:transform .32s cubic-bezier(.32,0,.15,1); box-shadow:-6px 0 32px rgba(0,0,0,0.1); }
+        .mob-drw.shut { transform:translateX(100%); }
+        .mml { display:flex; align-items:center; padding:12px 14px; border-radius:10px; font-size:14px; font-weight:600; color:#555; text-decoration:none; transition:all .14s; border:none; background:transparent; cursor:pointer; width:100%; text-align:left; }
+        .mml:hover,.mml.act { background:#FFF8E1; color:#DA291C; }
+        .msub { display:flex; align-items:center; gap:8px; padding:9px 14px 9px 26px; border-radius:8px; font-size:13px; font-weight:500; color:#888; text-decoration:none; transition:color .13s; }
+        .msub:hover { color:#DA291C; }
+        .msub::before { content:''; width:4px; height:4px; border-radius:50%; background:#FFC72C; flex-shrink:0; }
 
-              {/* Cart */}
-              <Link
-                href="/cart"
-                id="cart-button"
-                aria-label={`Cart with ${cartCount} items`}
-                className="relative flex items-center justify-center w-10 h-10 rounded-xl border transition-all duration-200 group"
-                style={{ background: "#1E1E1E", borderColor: "rgba(255,255,255,0.09)" }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-[18px] h-[18px] text-[#8A8A96] group-hover:text-[#FFC72C] transition-colors duration-200"
-                >
-                  <circle cx="9" cy="21" r="1" />
-                  <circle cx="20" cy="21" r="1" />
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                </svg>
-                {cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-0.5 bg-[#DA291C] text-white text-[10px] font-black rounded-full flex items-center justify-center leading-none shadow-md">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
+        @media(max-width:900px) { .n-desklinks { display:none !important; } .n-deskright .n-signin { display:none !important; } .n-ham { display:flex !important; } }
+        @media(max-width:640px) { .n-inner { padding:0 16px !important; } }
+      `}</style>
 
-              {/* Mobile Hamburger */}
-              <button
-                id="mobile-menu-btn"
-                onClick={() => setMenuOpen(!menuOpen)}
-                aria-expanded={menuOpen}
-                aria-label="Toggle mobile menu"
-                className="md:hidden relative flex items-center justify-center w-10 h-10 rounded-xl border transition-all duration-200"
-                style={{ background: "#1E1E1E", borderColor: menuOpen ? "rgba(255,199,44,0.4)" : "rgba(255,255,255,0.09)" }}
-              >
-                <div className="w-[18px] flex flex-col gap-[5px]">
-                  <span className={`block h-[2px] rounded-full bg-white transition-all duration-300 origin-center ${menuOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
-                  <span className={`block h-[2px] rounded-full bg-white transition-all duration-300 ${menuOpen ? "opacity-0 scale-x-0" : ""}`} />
-                  <span className={`block h-[2px] rounded-full bg-white transition-all duration-300 origin-center ${menuOpen ? "-rotate-45 -translate-y-[7px]" : ""}`} />
-                </div>
-              </button>
+      <header id="mcdnav" className="fixed top-0 left-0 right-0 z-50"
+        style={{ background:"#fff", borderBottom:"1px solid #EBEBEB", boxShadow:scrolled?"0 2px 18px rgba(0,0,0,0.07)":"none", transition:"box-shadow 0.3s" }}>
+        {/* Red stripe */}
+        <div style={{ height:5, background:"#DA291C" }} />
+
+        <div className="n-inner" style={{ maxWidth:1280, margin:"0 auto", padding:"0 28px", display:"flex", alignItems:"center", justifyContent:"space-between", height:68, gap:20 }}>
+
+          {/* Logo */}
+          <Link href="/" style={{ display:"flex", alignItems:"center", gap:10, textDecoration:"none", flexShrink:0 }}>
+            <div style={{ width:40, height:40, background:"#DA291C", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:23, fontWeight:900, color:"#FFC72C", lineHeight:1 }}>M</span>
             </div>
+            <div>
+              <div style={{ fontSize:14, fontWeight:800, color:"#1A1A1A", lineHeight:1.1, fontFamily:"'Outfit',sans-serif" }}>McDonald&apos;s</div>
+              <div style={{ fontSize:8.5, fontWeight:700, color:"#DA291C", letterSpacing:"0.22em", textTransform:"uppercase", fontFamily:"'Outfit',sans-serif" }}>India</div>
+            </div>
+          </Link>
+
+          {/* Desktop nav */}
+          <nav className="n-desklinks" style={{ display:"flex", alignItems:"center", gap:2, flex:1, justifyContent:"center" }}>
+            {NAV_LINKS.map(link => {
+              const active = isActive(link);
+              return (
+                <div key={link.label} style={{ position:"relative" }}
+                  onMouseEnter={() => link.hasDropdown && setDdOpen(true)}
+                  onMouseLeave={() => link.hasDropdown && setDdOpen(false)}>
+                  {link.isHash ? (
+                    <a href={link.href} className={`mnl ${active?"act":""}`} onClick={e => handleNavClick(link, e)}>
+                      {link.label}
+                      {link.hasDropdown && (
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transition:"transform .2s", transform:ddOpen?"rotate(180deg)":"rotate(0)" }}><path d="M6 9l6 6 6-6"/></svg>
+                      )}
+                    </a>
+                  ) : (
+                    <Link href={link.href} className={`mnl ${active?"act":""}`}>{link.label}</Link>
+                  )}
+                  {link.hasDropdown && (
+                    <div className={`mdd ${ddOpen?"open":""}`}>
+                      {MENU_DROPDOWN.map(d => (
+                        <Link key={d.href} href={d.href} className="mdi"><span className="mdi-dot"/>{d.label}</Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+
+          {/* Right */}
+          <div className="n-deskright" style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+            {session ? (
+              <div style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 6px 6px 14px", background:"#F5F5F5", border:"1.5px solid #E8E8E8", borderRadius:22 }}>
+                <span style={{ fontSize:13, fontWeight:700, color:"#1A1A1A", maxWidth:90, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontFamily:"'Outfit',sans-serif" }}>{session.user?.name?.split(" ")[0]||"User"}</span>
+                <button onClick={() => signOut()} style={{ padding:"5px 12px", background:"#DA291C", border:"none", borderRadius:18, color:"#fff", fontSize:11, fontWeight:800, letterSpacing:"0.06em", cursor:"pointer", fontFamily:"'Outfit',sans-serif" }}>LOGOUT</button>
+              </div>
+            ) : (
+              <Link href="/login" className="n-signin">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
+                Sign In
+              </Link>
+            )}
+            <Link href="/cart" aria-label={`Cart — ${cartCount} items`} className="n-cart">
+              <svg className="n-ci" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ color:"#888" }}>
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"/>
+              </svg>
+              {cartCount > 0 && <span className="n-cbadge">{cartCount}</span>}
+            </Link>
+            <button className="n-ham" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu" style={{ borderColor:menuOpen?"#FFC72C":"#E8E8E8" }}>
+              <div style={{ width:17, display:"flex", flexDirection:"column", gap:5 }}>
+                <span style={{ display:"block", height:"1.5px", background:"#333", borderRadius:2, transition:"all .28s", transformOrigin:"center", transform:menuOpen?"rotate(45deg) translate(0,6.5px)":"none" }} />
+                <span style={{ display:"block", height:"1.5px", background:"#333", borderRadius:2, transition:"opacity .28s", opacity:menuOpen?0:1 }} />
+                <span style={{ display:"block", height:"1.5px", background:"#333", borderRadius:2, transition:"all .28s", transformOrigin:"center", transform:menuOpen?"rotate(-45deg) translate(0,-6.5px)":"none" }} />
+              </div>
+            </button>
           </div>
         </div>
       </header>
 
-      {/* ─────────── MOBILE DRAWER OVERLAY ─────────── */}
-      <div
-        className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ${
-          menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
-        style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)" }}
-        onClick={() => setMenuOpen(false)}
-      />
+      {/* Mobile overlay */}
+      <div className={`mob-ov ${menuOpen?"":"off"}`} onClick={() => setMenuOpen(false)} />
 
-      {/* ─────────── MOBILE DRAWER PANEL ─────────── */}
-      <div
-        id="mobile-menu"
-        className={`fixed top-0 right-0 h-full w-[280px] z-50 md:hidden flex flex-col transition-transform duration-350 ease-out ${
-          menuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-        style={{ background: "#161616", borderLeft: "1px solid rgba(255,255,255,0.07)" }}
-      >
-        {/* Drawer header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/6">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-9 h-9 flex items-center justify-center rounded-xl shadow"
-              style={{ background: "linear-gradient(135deg,#FFC72C,#FFB800)" }}
-            >
-              <span className="font-black text-[#DA291C] text-xl" style={{ fontFamily: "'Bebas Neue',sans-serif" }}>M</span>
+      {/* Mobile drawer */}
+      <div className={`mob-drw ${menuOpen?"":"shut"}`}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px 12px", borderBottom:"1px solid #EBEBEB" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ width:34, height:34, background:"#DA291C", borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:19, fontWeight:900, color:"#FFC72C", lineHeight:1 }}>M</span>
             </div>
-            <span className="text-white font-bold text-sm">McDonald&apos;s India</span>
+            <div style={{ fontSize:13, fontWeight:800, color:"#1A1A1A", fontFamily:"'Outfit',sans-serif" }}>McDonald&apos;s India</div>
           </div>
-          <button
-            onClick={() => setMenuOpen(false)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[#6B6B78] hover:text-white hover:bg-white/8 transition-colors"
-            aria-label="Close menu"
-          >
-            ✕
+          <button onClick={() => setMenuOpen(false)} style={{ width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:7, border:"1.5px solid #E8E8E8", background:"#fff", cursor:"pointer", color:"#888" }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
 
-        {/* Nav links */}
-        <nav className="flex flex-col gap-1 p-4 flex-1">
-          {navLinks.map((link) => {
-            const active = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-200 ${
-                  active
-                    ? "text-[#1A1A1A]"
-                    : "text-[#8A8A96] hover:text-white hover:bg-white/5"
-                }`}
-                style={active ? { background: "linear-gradient(135deg,#FFC72C,#FFB800)" } : {}}
-              >
-                <span className="text-base">{link.icon}</span>
-                {link.label}
-              </Link>
-            );
-          })}
-
-          {/* Auth Button in Drawer */}
-          {session ? (
-            <div className="mt-4 p-4 rounded-2xl flex justify-between items-center" style={{ background: "#1E1E1E" }}>
-              <span className="text-white text-sm font-bold truncate">Hi, {session.user?.name}</span>
-              <button onClick={() => signOut({ callbackUrl: '/' })} className="text-[#DA291C] text-sm font-black tracking-wider hover:text-white transition-colors">
-                LOGOUT
-              </button>
+        <nav style={{ flex:1, overflowY:"auto", padding:"10px 8px" }}>
+          <div>
+            <button className={`mml ${activeSection==="menu"?"act":""}`} onClick={() => { setMenuOpen(false); pathname==="/"?smoothScroll("menu"):window.location.href="/#menu"; }}>Menu</button>
+            <div style={{ display:"flex", flexDirection:"column", gap:1, marginBottom:6 }}>
+              {MENU_DROPDOWN.map(d => <Link key={d.href} href={d.href} onClick={() => setMenuOpen(false)} className="msub">{d.label}</Link>)}
             </div>
-          ) : (
-            <Link href="/login" onClick={() => setMenuOpen(false)} className="mt-4 flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-bold text-white bg-[#DA291C] transition-all duration-200 shadow-lg">
-              👤 LOGIN / SIGN UP
-            </Link>
-          )}
-
-          {/* Mode toggle in drawer */}
-          <div className="mt-3 p-1 rounded-2xl flex gap-1" style={{ background: "#1E1E1E" }}>
-            {(["delivery", "dine-in"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-bold capitalize transition-all duration-200 ${
-                  mode === m ? "text-[#1A1A1A]" : "text-[#6B6B78] hover:text-[#9A9AA8]"
-                }`}
-                style={mode === m ? { background: "linear-gradient(135deg,#FFC72C,#FFB800)" } : {}}
-              >
-                {m === "delivery" ? "🛵  Delivery" : "🍽  Dine-In"}
-              </button>
-            ))}
           </div>
+          <Link href="/outlets" onClick={() => setMenuOpen(false)} className={`mml ${pathname==="/outlets"?"act":""}`}>Restaurants</Link>
+          <button className={`mml ${activeSection==="mcdelivery"?"act":""}`} onClick={() => { setMenuOpen(false); pathname==="/"?smoothScroll("mcdelivery"):window.location.href="/#mcdelivery"; }}>McDelivery</button>
+          <button className={`mml ${activeSection==="news"?"act":""}`} onClick={() => { setMenuOpen(false); pathname==="/"?smoothScroll("news"):window.location.href="/#news"; }}>News</button>
+          <Link href="/birthday" onClick={() => setMenuOpen(false)} className={`mml ${pathname==="/birthday"?"act":""}`}>Birthday Party</Link>
+          <Link href="/careers" onClick={() => setMenuOpen(false)} className={`mml ${pathname==="/careers"?"act":""}`}>Careers</Link>
         </nav>
 
-        {/* Drawer footer */}
-        <div className="p-4 border-t border-white/6">
-          <Link
-            href="/cart"
-            onClick={() => setMenuOpen(false)}
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl text-sm font-bold text-[#1A1A1A] transition-all duration-200 hover:opacity-90"
-            style={{ background: "linear-gradient(135deg,#FFC72C,#FFB800)" }}
-          >
-            🛒 View Cart {cartCount > 0 && `(${cartCount})`}
-          </Link>
+        <div style={{ padding:"12px 8px", borderTop:"1px solid #EBEBEB" }}>
+          {session ? (
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 14px", borderRadius:12, background:"#F5F5F5", border:"1.5px solid #E8E8E8" }}>
+              <span style={{ fontSize:13, fontWeight:700, color:"#1A1A1A", fontFamily:"'Outfit',sans-serif" }}>{session.user?.name}</span>
+              <button onClick={() => signOut({ callbackUrl:"/" })} style={{ padding:"5px 12px", background:"#DA291C", border:"none", borderRadius:18, color:"#fff", fontSize:11, fontWeight:800, cursor:"pointer", fontFamily:"'Outfit',sans-serif" }}>LOGOUT</button>
+            </div>
+          ) : (
+            <Link href="/login" onClick={() => setMenuOpen(false)} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, width:"100%", padding:"12px", borderRadius:22, background:"#DA291C", color:"#fff", fontSize:13, fontWeight:800, textDecoration:"none", fontFamily:"'Outfit',sans-serif" }}>
+              Sign In / Register
+            </Link>
+          )}
         </div>
       </div>
     </>

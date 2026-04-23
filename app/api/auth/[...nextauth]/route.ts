@@ -1,63 +1,82 @@
-import NextAuth, { NextAuthOptions } from "next-auth";
+import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { connectDB } from "@/lib/mongodb";
-import { User } from "@/lib/models/User";
+import { connectToDatabase } from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 
-export const authOptions: NextAuthOptions = {
+const handler = NextAuth({
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "mcfan@example.com" },
+        email:    { label: "Email",    type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Missing credentials");
+          throw new Error("Please provide email and password.");
         }
 
-        await connectDB();
+        try {
+          const { db } = await connectToDatabase();
+          const user = await db
+            .collection("users")
+            .findOne({ email: credentials.email.toLowerCase().trim() });
 
-        // Check if user exists
-        const user = await User.findOne({ email: credentials.email }).select("+password");
-        if (!user) {
-          throw new Error("No user found with this email");
+          if (!user) {
+            throw new Error("No account found with this email.");
+          }
+
+          const isValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isValid) {
+            throw new Error("Incorrect password.");
+          }
+
+          return {
+            id:    user._id.toString(),
+            name:  user.name,
+            email: user.email,
+          };
+        } catch (err: any) {
+          throw new Error(err.message || "Authentication failed.");
         }
-
-        // Compare password
-        const isPasswordCorrect = await bcrypt.compare(credentials.password, user.password);
-        if (!isPasswordCorrect) {
-          throw new Error("Incorrect password");
-        }
-
-        return { id: user._id.toString(), email: user.email, name: user.name };
       },
     }),
   ],
+
   session: {
     strategy: "jwt",
+    maxAge:   30 * 24 * 60 * 60, // 30 days
   },
+
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60,
+  },
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        token.id   = user.id;
+        token.name = user.name;
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.id;
+      if (token && session.user) {
+        (session.user as any).id   = token.id;
+        session.user.name          = token.name as string;
       }
       return session;
     },
   },
-  pages: {
-    signIn: "/login",
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-};
 
-const handler = NextAuth(authOptions);
+  pages: {
+    signIn:   "/login",
+    error:    "/login",
+  },
+
+  secret: process.env.NEXTAUTH_SECRET,
+
+  debug: process.env.NODE_ENV === "development",
+});
 
 export { handler as GET, handler as POST };
