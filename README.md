@@ -1,36 +1,206 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# McDonald Clone 🍔
 
-## Getting Started
+A modern **McDonald’s-inspired food ordering web application** built using **Next.js**, **React**, and **TypeScript**.  
+This project replicates a fast-food ordering experience with dynamic menus, outlet browsing, coupons, filtering, and responsive UI components.
 
-First, run the development server:
+---
+
+# 🚀 Features
+
+- 🍟 Modern McDonald-inspired UI
+- 📍 Outlet listing & location browsing
+- 🎟️ Coupon & offers section
+- 🔍 Menu filtering and category navigation
+- 🛒 Dynamic menu cards
+- ⚡ Fast rendering with Next.js
+- 🎨 Responsive design with Tailwind CSS
+- 🧩 Reusable React components
+- 🌙 Clean project architecture
+
+---
+
+# 🛠️ Tech Stack
+
+## Frontend
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+
+## Backend
+- Node.js backend services (inside `/backend`)
+
+## Tooling
+- ESLint
+- PostCSS
+- VS Code
+
+---
+
+# 📂 Project Structure
+
+```bash
+McDonald/
+│
+├── app/                  # Next.js app directory
+├── backend/              # Backend services / APIs
+├── components/           # Reusable UI components
+│   ├── CouponSection.tsx
+│   ├── CursorFX.tsx
+│   ├── FilterBar.tsx
+│   ├── LocationBar.tsx
+│   ├── MenuCard.tsx
+│   ├── MenuList.tsx
+│   ├── Navbar.tsx
+│   ├── OutletCard.tsx
+│   └── OutletList.tsx
+│
+├── context/              # React Context APIs
+├── data/                 # Static/mock data
+├── lib/                  # Utility functions
+├── public/               # Public assets
+│
+├── .env.local            # Environment variables
+├── next.config.ts
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+---
+
+# ⚙️ Installation & Local Setup
+
+## 1️⃣ Clone the Repository
+
+```bash
+git clone <your-repository-url>
+cd McDonald
+```
+
+---
+
+## 2️⃣ Install Dependencies
+
+Using npm:
+
+```bash
+npm install
+```
+
+Or using yarn:
+
+```bash
+yarn install
+```
+
+---
+
+## 3️⃣ Configure Environment Variables
+
+Create a `.env.local` file in the root directory.
+
+Example:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+```
+
+Add all required environment variables depending on your backend configuration.
+
+---
+
+## 4️⃣ Run the Development Server
+
+### Frontend
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Frontend runs on:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+### Backend (if applicable)
 
-To learn more about Next.js, take a look at the following resources:
+Navigate to backend folder:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+cd backend
+npm install
+npm start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Backend typically runs on:
 
-## Deploy on Vercel
+```bash
+http://localhost:5000
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# 🧪 Available Scripts
+
+```bash
+npm run dev       # Start development server
+npm run build     # Create production build
+npm run start     # Start production server
+npm run lint      # Run ESLint
+```
+
+---
+
+# 🌐 Future Improvements
+
+- 🔐 Authentication system
+- 🛒 Cart & checkout
+- 💳 Payment gateway integration
+- 📦 Order tracking
+- 🌍 Real backend/database integration
+- 📱 Progressive Web App (PWA)
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome.
+
+## Steps:
+
+1. Fork the repository
+2. Create a feature branch
+
+```bash
+git checkout -b feature-name
+```
+
+3. Commit changes
+
+```bash
+git commit -m "Added new feature"
+```
+
+4. Push to branch
+
+```bash
+git push origin feature-name
+```
+
+5. Open a Pull Request
+
+---
+
+# 📄 License
+
+This project is for educational and portfolio purposes.
+
+---
+
+# 👨‍💻 Author
+
+Developed with ❤️ using Next.js and TypeScript.
