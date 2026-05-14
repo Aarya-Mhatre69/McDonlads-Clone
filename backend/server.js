@@ -1,41 +1,66 @@
-// ─── backend/server.js ───────────────────────────────────────────────────────
-// Main Express server entry point for McDonald's India API
+require("dotenv").config();
 
-const express = require("express");
-const cors    = require("cors");
+const express      = require("express");
+const cors         = require("cors");
+const helmet       = require("helmet");
+const mongoSanitize = require("express-mongo-sanitize");
+const mongoose     = require("mongoose");
 
-// ── Import route handlers ─────────────────────────────────────────────────────
+const { globalLimiter } = require("./middleware/rateLimiter");
+
 const menuRoutes   = require("./routes/menuRoutes");
 const outletRoutes = require("./routes/outletRoutes");
 const couponRoutes = require("./routes/couponRoutes");
 const orderRoutes  = require("./routes/orderRoutes");
 
-// ── App setup ─────────────────────────────────────────────────────────────────
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
-// ── Middleware ────────────────────────────────────────────────────────────────
-// Parse incoming JSON request bodies
-app.use(express.json());
+// ── Security headers ──────────────────────────────────────────────────────────
+app.use(helmet({ contentSecurityPolicy: false })); // CSP managed by Next.js
+app.set("trust proxy", 1);
 
-// Enable CORS — allows the Next.js frontend (localhost:3000) to call this API
+// ── CORS ──────────────────────────────────────────────────────────────────────
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000,http://localhost:3001").split(",");
 app.use(cors({
-  origin: [
-    "http://localhost:3000",   // Next.js dev server
-    "http://localhost:3001",   // alternate dev port
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error("CORS: origin not allowed"));
+  },
+  methods:          ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  allowedHeaders:   ["Content-Type", "Authorization", "x-api-key", "x-user-id", "x-user-email", "x-user-name"],
+  credentials:      true,
 }));
 
+// ── Body parsing ──────────────────────────────────────────────────────────────
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: false, limit: "10kb" }));
+
+// ── NoSQL injection sanitization ──────────────────────────────────────────────
+app.use(mongoSanitize({ replaceWith: "_" }));
+
+// ── Global rate limiter ───────────────────────────────────────────────────────
+app.use(globalLimiter);
+
+// ── MongoDB via Mongoose ──────────────────────────────────────────────────────
+const MONGODB_URI = process.env.MONGODB_URI;
+if (MONGODB_URI) {
+  mongoose
+    .connect(MONGODB_URI, { dbName: process.env.MONGODB_DB || "mcdonald" })
+    .then(() => console.log("✅  MongoDB (Mongoose) connected"))
+    .catch(err => console.error("❌  MongoDB error:", err.message));
+
+  mongoose.connection.on("disconnected", () => console.warn("⚠️  MongoDB disconnected"));
+}
+
 // ── Health check ──────────────────────────────────────────────────────────────
-// GET /api/health → confirms the server is running
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (_req, res) => {
   res.status(200).json({
-    success: true,
-    message: "McDonald's India API is running 🍔",
+    success:   true,
+    message:   "McDonald's India API is running",
     timestamp: new Date().toISOString(),
-    version: "1.0.0",
+    version:   "1.0.0",
+    db:        mongoose.connection.readyState === 1 ? "connected" : "disconnected",
   });
 });
 
@@ -45,36 +70,35 @@ app.use("/api/outlets", outletRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/orders",  orderRoutes);
 
-// ── 404 handler — catches any unknown routes ──────────────────────────────────
+// ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route '${req.originalUrl}' not found on this server.`,
-  });
+  res.status(404).json({ success: false, message: `Route '${req.originalUrl}' not found.` });
 });
 
 // ── Global error handler ──────────────────────────────────────────────────────
-// Catches any unhandled errors thrown inside route handlers
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, _next) => {
-  console.error("❌ Server Error:", err.message);
-  res.status(500).json({
+  const status  = err.status || 500;
+  const message = err.message || "Internal Server Error";
+  console.error(`❌ [${status}] ${req.method} ${req.originalUrl} — ${message}`);
+  res.status(status).json({
     success: false,
-    message: "Internal Server Error. Please try again later.",
-    error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    message,
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
   });
 });
 
-// ── Start server ──────────────────────────────────────────────────────────────
+// ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log("\n🍔  McDonald's India API Server");
-  console.log("─────────────────────────────────────");
-  console.log(`🚀  Running at: http://localhost:${PORT}`);
-  console.log(`📋  Health:     http://localhost:${PORT}/api/health`);
-  console.log(`🍟  Menu:       http://localhost:${PORT}/api/menu`);
-  console.log(`📍  Outlets:    http://localhost:${PORT}/api/outlets`);
-  console.log(`🎟️   Coupons:    http://localhost:${PORT}/api/coupons`);
-  console.log(`📦  Orders:     http://localhost:${PORT}/api/orders`);
-  console.log("─────────────────────────────────────\n");
+  console.log("─────────────────────────────────────────");
+  console.log(`🚀  Running at:  http://localhost:${PORT}`);
+  console.log(`📋  Health:      http://localhost:${PORT}/api/health`);
+  console.log(`🍟  Menu:        http://localhost:${PORT}/api/menu`);
+  console.log(`📍  Outlets:     http://localhost:${PORT}/api/outlets`);
+  console.log(`🎟️   Coupons:     http://localhost:${PORT}/api/coupons`);
+  console.log(`📦  Orders:      http://localhost:${PORT}/api/orders`);
+  console.log("─────────────────────────────────────────\n");
 });
 
 module.exports = app;
